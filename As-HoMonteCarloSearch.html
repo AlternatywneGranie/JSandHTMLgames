@@ -1,0 +1,329 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Othello</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .white {
+            background-color: yellow;
+        }
+
+        .black {
+            background-color: red;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Othello</h1>
+    <table id="board"></table>
+    <div>
+        <p>Player Points: <span id="playerPoints">2</span></p>
+        <p>AI Points: <span id="aiPoints">2</span></p>
+    </div>
+    <script>
+const ROWS = 8;
+const COLS = 8;
+const PLAYER_COLOR = 'yellow';
+const AI_COLOR = 'red';
+let board = [];
+for (let row = 0; row < ROWS; row++) {
+            let newRow = [];
+            for (let col = 0; col < COLS; col++) {
+                newRow.push(null);
+            }
+            board.push(newRow);
+}
+let boardCopy = [];
+for (let row = 0; row < ROWS; row++) {
+            boardCopy.push([...board[row]]);
+}
+board[3][3] = PLAYER_COLOR;
+board[3][4] = AI_COLOR;
+board[4][3] = AI_COLOR;
+board[4][4] = PLAYER_COLOR;
+
+// Define the HTML table element for the game board
+let boardElement = document.getElementById('board');
+
+// Create the table rows and cells and add them to the HTML element
+for (let row = 0; row < ROWS; row++) {
+            let newRow = document.createElement('tr');
+            for (let col = 0; col < COLS; col++) {
+                let newCell = document.createElement('td');
+                newCell.addEventListener('click', function () {
+                    if (isValidMove(row, col, PLAYER_COLOR)) {
+                        makeMove(row, col, PLAYER_COLOR);
+                        if (aiPoints > 32) {
+                            alert('Koniec gry');
+                        }
+                        if (!hasValidMoves(AI_COLOR)) {
+                            alert('AI has no valid moves. Your turn again.');
+                        } else {
+                            aiMove();
+                        }
+                    } else {
+                        alert('Invalid move. Try again.');
+                    }
+                });
+                newRow.appendChild(newCell);
+            }
+            boardElement.appendChild(newRow);
+}
+
+let playerPoints = 2;
+let aiPoints = 2;
+// Update the HTML element to reflect the current state of the game board
+function render() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    let cell = boardElement.rows[row].cells[col];
+                    cell.className = '';
+                    if (board[row][col] === PLAYER_COLOR) {
+                        cell.classList.add('white');
+                    } else if (board[row][col] === AI_COLOR) {
+                        cell.classList.add('black');
+                    }
+                }
+            }
+}
+
+// Determine whether a move is valid for a given color at a given location
+function isValidMove(row, col, color) {
+            if (board[row][col] !== null) {
+                return false;
+            }
+            for (let dRow = -1; dRow <= 1; dRow++) {
+                for (let dCol = -1; dCol <= 1; dCol++) {
+                    if (dRow === 0 && dCol === 0) {
+                        continue;
+                    }
+                    let r = row + dRow;
+                    let c = col + dCol;
+                    let foundOpponent = false;
+                    while (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        if (board[r][c] === null) {
+                            break;
+                        } else if (board[r][c] === color) {
+                            if (foundOpponent) {
+                                return true;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            foundOpponent = true;
+                        }
+                        r += dRow;
+                        c += dCol;
+                    }
+                }
+            }
+            return false;
+}
+
+let playerScore = 2;
+let aiScore = 2;
+
+// Calculate the score for each player
+function calculateScore() {
+            playerScore = 0;
+            aiScore = 0;
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[row][col] === PLAYER_COLOR) {
+                        playerScore++;
+                    } else if (board[row][col] === AI_COLOR) {
+                        aiScore++;
+                    }
+                }
+            }
+}
+
+// Update the score display on the HTML page
+function updateScoreDisplay() {
+            document.getElementById('playerPoints').textContent = playerScore;
+            document.getElementById('aiPoints').textContent = aiScore;
+}
+
+// Call the calculateScore and updateScoreDisplay functions in the makeMove function
+function makeMove(row, col, color) {
+            board[row][col] = color;
+            for (let dRow = -1; dRow <= 1; dRow++) {
+                for (let dCol = -1; dCol <= 1; dCol++) {
+                    if (dRow === 0 && dCol === 0) {
+                        continue;
+                    }
+                    let r = row + dRow;
+                    let c = col + dCol;
+                    let foundOpponent = false;
+                    let cellsToFlip = [];
+                    while (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        if (board[r][c] === null) {
+                            break;
+                        } else if (board[r][c] === color) {
+                            if (foundOpponent) {
+                                for (let i = 0; i < cellsToFlip.length; i++) {
+                                    let flipRow = cellsToFlip[i][0];
+                                    let flipCol = cellsToFlip[i][1];
+                                    board[flipRow][flipCol] = color;
+                                }
+                            }
+                            break;
+                        } else {
+                            cellsToFlip.push([r, c]);
+                            foundOpponent = true;
+                        }
+                        r += dRow;
+                        c += dCol;
+                    }
+                }
+            }
+            calculateScore();
+            updateScoreDisplay();
+
+            render();
+}
+
+
+// Determine whether a given color has any valid moves
+function hasValidMoves(color) {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (isValidMove(row, col, color)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+}
+
+function aiMove() {
+            const validMoves = [];
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (isValidMove(row, col, AI_COLOR)) {
+                        validMoves.push([row, col]);
+                    }
+                }
+            }
+
+            let bestMove = validMoves[0];
+            let maxScore = -1;
+            let MAX_DEPTH = 120;
+
+            // use iterative deepening for Monte Carlo Search
+            for (let depth = 1; depth <= MAX_DEPTH; depth++) {
+                let localBestMove = validMoves[0];
+                let localMaxScore = -1;
+                for (let i = 0; i < validMoves.length; i++) {
+                    let [row, col] = validMoves[i];
+                    let score = simulateMove(row, col, depth, AI_COLOR);
+                    // Add score of the opponent's move to the current score
+                    score += simulateMove(row, col, depth, PLAYER_COLOR);
+                    if (score > localMaxScore) {
+                        localBestMove = [row, col];
+                        localMaxScore = score;
+                    }
+                }
+                if (localMaxScore > maxScore) {
+                    bestMove = localBestMove;
+                    maxScore = localMaxScore;
+                }
+            }
+
+    makeMove(bestMove[0], bestMove[1], AI_COLOR);
+    console.log("WYBRANO NAJLEPSZY RUCH DLA GRACZA : ", AI_COLOR);
+        }
+        
+function simulateMove(row, col, color) {
+let score = 0;
+let originalBoard = JSON.parse(JSON.stringify(board));
+
+    makeMove(row, col, color);
+
+let simulations = 1000;
+for (let i = 0; i < simulations; i++) {
+    let boardCopy = [];
+    for (let row = 0; row < ROWS; row++) {
+        boardCopy.push([...board[row]]);
+    }
+
+    let currentColor = color === AI_COLOR ? PLAYER_COLOR : AI_COLOR;
+    let gameOver = false;
+    console.log("Simulating move for color", color, "at row", row, "and col", col);
+    while (!gameOver) {
+        let moves = getValidMoves(boardCopy, currentColor);
+
+        if (moves.length === 0) {
+            if (getValidMoves(boardCopy, color).length === 0) {
+                gameOver = true;
+                continue;
+            }
+            currentColor = color;
+            continue;
+        }
+        let randomIndex = Math.floor(Math.random() * moves.length);
+        let [row, col] = moves[Math.floor(Math.random() * moves.length)];
+        console.log("Selected move at index", randomIndex, "for color", currentColor, "at row", row, "and col", col);
+        makeMove(row, col, currentColor, boardCopy);
+
+        currentColor = currentColor === AI_COLOR ? PLAYER_COLOR : AI_COLOR;
+
+        if (getValidMoves(boardCopy, currentColor).length === 0) {
+            if (getValidMoves(boardCopy, currentColor === AI_COLOR ? PLAYER_COLOR : AI_COLOR).length === 0) {
+                gameOver = true;
+                continue;
+            }
+            currentColor = currentColor === AI_COLOR ? PLAYER_COLOR : AI_COLOR;
+        }
+    }
+
+    let simulationScore = aiScore - playerScore;
+    score += simulationScore;
+
+    boardCopy = JSON.parse(JSON.stringify(originalBoard));
+    playerScore = 2;
+    aiScore = 2;
+}
+
+board = JSON.parse(JSON.stringify(originalBoard));
+playerScore = 2;
+aiScore = 2;
+
+return [score / simulations, -score / simulations]; //zwraca wartość dla gracza AI i przeciwnika
+}
+
+function getValidMoves(board, color) {
+            let validMoves = [];
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (isValidMove(row, col, color)) {
+                        validMoves.push([row, col]);
+                    }
+                }
+            }
+
+            return validMoves;
+}
+
+
+// Render the initial state of the game board
+render();
+    </script>
+</body>
+</html>
